@@ -11,9 +11,10 @@ RUN apt-get -o APT::Get::Lock::Timeout=60 update && \
     wget \
     perl \
     gnupg \
+    ca-certificates \
     && \
-    wget -qO- http://www.webmin.com/jcameron-key.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/jcameron-key.gpg && \
-    echo "deb http://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list && \
+    wget -qO- https://www.webmin.com/jcameron-key.asc | gpg --dearmor --yes > /etc/apt/trusted.gpg.d/jcameron-key.gpg && \
+    echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list && \
     apt-get -o APT::Get::Lock::Timeout=60 update && \
     apt-get install -y --no-install-recommends webmin && \
     apt-get clean && \
