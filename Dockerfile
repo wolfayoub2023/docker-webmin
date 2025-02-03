@@ -7,9 +7,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install necessary packages
 RUN apt-get update \
     && apt-get install -y wget apt-transport-https software-properties-common gnupg \
-    && wget -O webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh \
-    && sh webmin-setup-repos.sh \
+    # Add the Webmin repository and GPG key
+    && wget -qO - https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh | sh \
+    # Install Webmin
     && apt-get install -y webmin --install-recommends \
+    # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
