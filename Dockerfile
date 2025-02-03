@@ -23,6 +23,31 @@ RUN wget -O /tmp/webmin.tar.gz https://github.com/webmin/webmin/archive/refs/tag
     && mv /opt/webmin-2.115 /opt/webmin \
     && rm /tmp/webmin.tar.gz
 
+# Manual configuration instead of interactive setup
+COPY <<EOF /etc/webmin/miniserv.conf
+port=10000
+root=/opt/webmin
+ssl=0
+mimetypes=/opt/webmin/mime.types
+addtype_cgi=internal/cgi
+realm=Webmin Server
+logfile=/var/log/webmin/miniserv.log
+errorlog=/var/log/webmin/miniserv.error
+pidfile=/var/run/webmin.pid
+logtime=168
+premodules=WebminCore
+server=MiniServ/1.991
+userfile=/etc/webmin/miniserv.users
+keyfile=/etc/webmin/miniserv.pem
+passwd_file=/etc/shadow
+passwd_uindex=0
+passwd_pindex=1
+passwd_cindex=2
+passwd_mindex=4
+passwd_mode=0
+preroot=authentic-theme
+EOF
+
 # Configure Webmin for Render
 RUN echo "port=\$PORT" > /etc/webmin/miniserv.conf \
     && echo "ssl=0" >> /etc/webmin/miniserv.conf \
