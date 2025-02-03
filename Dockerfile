@@ -4,7 +4,11 @@ FROM ubuntu:22.04
 # Prevent services from starting during installation
 RUN echo '#!/bin/sh\nexit 101' > /usr/sbin/policy-rc.d && \
     chmod +x /usr/sbin/policy-rc.d
-
+    
+# Add before apt-get commands
+RUN ps aux | grep -i apt && \
+    lsof /var/lib/apt/lists/lock
+    
 # Install dependencies and Webmin with lock timeout
 RUN apt-get -o APT::Get::Lock::Timeout=60 update && \
     apt-get install -y --no-install-recommends \
