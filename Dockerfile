@@ -1,51 +1,26 @@
-# Use the latest Ubuntu image as a parent
-FROM ubuntu:focal
+# Use Ubuntu LTS as the base image
+FROM ubuntu:22.04
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/Amsterdam
-
-# Update package lists and install core utilities
-RUN apt-get update -qq -y && \
-    apt-get upgrade -y && \
-    apt-get install -y \
-    wget \
-    curl \
-    apt-transport-https \
-    lsb-release \
-    ca-certificates \
-    gnupg2 \
-    software-properties-common \
-    locales \
-    cron
-
-# Reconfigure locales
-RUN dpkg-reconfigure locales
-
-# Install Webmin
-RUN echo root:password | chpasswd && \
-    echo "Acquire::GzipIndexes \"false\"; Acquire::CompressionTypes::Order:: \"gz\";" > /etc/apt/apt.conf.d/docker-gzip-indexes && \
-    update-locale LANG=C.UTF-8 && \
-    echo deb https://download.webmin.com/download/repository sarge contrib >> /etc/apt/sources.list && \
-    wget http://www.webmin.com/jcameron-key.asc && \
-    apt-key add jcameron-key.asc && \
+# Install dependencies and Webmin
+RUN apt-get update && \
+    apt-get install -y wget perl gnupg && \
+    wget -qO- http://www.webmin.com/jcameron-key.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/jcameron-key.gpg && \
+    echo "deb http://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list && \
     apt-get update && \
     apt-get install -y webmin && \
     apt-get clean
 
-# Expose Webmin port
+# Create start script
+RUN echo "#!/bin/sh\n" > /start-webmin.sh && \
+    echo "sed -i \"s/^port=.*/port=\${PORT}/\" /etc/webmin/miniserv.conf\n" >> /start-webmin.sh && \
+    echo "exec /usr/share/webmin/daemon.pl" >> /start-webmin.sh && \
+    chmod +x /start-webmin.sh
+
+# Set default root password (change in Render dashboard)
+RUN echo "root:webmin-render" | chpasswd
+
+# Expose default port (overridden by Render's PORT)
 EXPOSE 10000
 
-# Set locale
-ENV LC_ALL C.UTF-8
-
-# Set working directory
-WORKDIR /home
-
-# Create entrypoint script
-RUN echo "#! /bin/bash" > entrypoint.sh && \
-    echo "sed -i 's;ssl=1;ssl=0;' /etc/webmin/miniserv.conf && systemctl enable cron && service webmin start && tail -f /dev/null" >> entrypoint.sh && \
-    chmod 755 entrypoint.sh
-
-# Set entrypoint
-CMD /home/entrypoint.sh
+# Start Webmin
+CMD ["/start-webmin.sh"]
