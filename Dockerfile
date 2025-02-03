@@ -25,7 +25,7 @@ RUN rm -f /usr/sbin/policy-rc.d
 # Configure Webmin for Render
 RUN echo "#!/bin/sh" > /start-webmin.sh && \
     echo "sed -i \"s/^port=.*/port=\${PORT}/\" /etc/webmin/miniserv.conf" >> /start-webmin.sh && \
-    echo "exec /usr/sbin/webmin" >> /start-webmin.sh && \
+    echo "exec /usr/share/webmin/miniserv.pl /etc/webmin/miniserv.conf" >> /start-webmin.sh && \
     chmod +x /start-webmin.sh
 
 # Set default credentials
