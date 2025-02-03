@@ -20,7 +20,7 @@ RUN adduser -D webmin \
 # Download and extract Webmin
 RUN wget -O /tmp/webmin.tar.gz https://github.com/webmin/webmin/archive/refs/tags/1.991.tar.gz \
     && tar -xzf /tmp/webmin.tar.gz -C /opt/ \
-    && mv /opt/webmin-2.115 /opt/webmin \
+    && mv /opt/webmin-1.991 /opt/webmin \
     && rm /tmp/webmin.tar.gz
 
 # Manual configuration instead of interactive setup
