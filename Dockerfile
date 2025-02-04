@@ -31,7 +31,7 @@ expect "Login name" { send "admin\\r" }\n\
 expect "Login password" { send "admin-password\\r" }\n\
 expect "Password again" { send "admin-password\\r" }\n\
 expect "Use SSL" { send "n\\r" }\n\
-expect "Start Webmin at boot time" { send "y\\r" }\n\
+expect "Start Webmin at boot time" { send "n\\r" }\n\
 expect eof\n' > /opt/webmin/setup.expect
 
 # Set permissions and run setup
