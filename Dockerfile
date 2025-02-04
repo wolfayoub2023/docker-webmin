@@ -1,14 +1,17 @@
 FROM pschatzmann/webmin
 
-# Replace Alpine repository with a mirror
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+# Update repositories to Alpine v3.21
+RUN echo "http://mirrors.aliyun.com/alpine/v3.21/main" > /etc/apk/repositories && \
+    echo "http://mirrors.aliyun.com/alpine/v3.21/community" >> /etc/apk/repositories
 
-# Install dependencies with proper syntax
+# Install dependencies
 RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache \
         alpine-sdk \
         openssl \
+        libressl \
+        opendkim \ 
         ca-certificates \
         curl \
         perl-net-ssleay \
@@ -16,7 +19,6 @@ RUN apk update && \
         wget \
         postfix \
         spamassassin \
-        opendkim \
         dovecot \
         libressl \
         libevent-dev \
