@@ -3,6 +3,9 @@ FROM alpine:latest
 # Install required dependencies
 RUN apk update && apk add --no-cache \
     perl \
+    perl-net-ssleay \
+    perl-io-tty \
+    perl-encode \
     expect \
     openssl \
     wget \
