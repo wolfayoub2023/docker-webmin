@@ -11,37 +11,48 @@ RUN apk update && apk add --no-cache \
     bash \
     tar \
     gzip \
-    supervisor
+    supervisor \
+    expect
 
-# Download and install Webmin
-WORKDIR /opt
-RUN wget -O webmin.tar.gz https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz && \
-    tar -xzf webmin.tar.gz && \
-    cd $(tar -tzf webmin.tar.gz | head -1 | cut -f1 -d"/") && \
-    ./setup.sh /usr/local/webmin <<EOF
-/etc/webmin
-/var/webmin
-/usr/bin/perl
-10000
-admin
-yourpassword
-yourpassword
-n
-n
-EOF
+# Download and extract Webmin
+WORKDIR /opt/webmin
+RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O webmin.tar.gz && \
+    tar -xzf webmin.tar.gz --strip-components=1 && \
+    rm webmin.tar.gz
+
+# Create an expect script to automate the Webmin setup
+RUN printf '#!/usr/bin/expect -f\n\
+set timeout -1\n\
+spawn /opt/webmin/setup.sh /opt/webmin\n\
+expect "Config file directory" { send "/etc/webmin\\r" }\n\
+expect "Log file directory" { send "/var/log/webmin\\r" }\n\
+expect "Full path to perl" { send "/usr/bin/perl\\r" }\n\
+expect "Web server port" { send "10000\\r" }\n\
+expect "Login name" { send "admin\\r" }\n\
+expect "Login password" { send "admin-password\\r" }\n\
+expect "Password again" { send "admin-password\\r" }\n\
+expect "Use SSL" { send "n\\r" }\n\
+expect "Start Webmin at boot time" { send "n\\r" }\n\
+expect eof\n' > /opt/webmin/setup.expect && chmod +x /opt/webmin/setup.expect
+
+# Run the expect script
+RUN /opt/webmin/setup.expect
 
 # Create Supervisor config directory
 RUN mkdir -p /etc/supervisor/conf.d
 
 # Create Supervisor configuration file
-RUN echo "[supervisord]" > /etc/supervisor/supervisord.conf && \
-    echo "nodaemon=true" >> /etc/supervisor/supervisord.conf && \
-    echo "[program:webmin]" > /etc/supervisor/conf.d/webmin.conf && \
-    echo "command=/usr/local/webmin/start" >> /etc/supervisor/conf.d/webmin.conf && \
-    echo "autostart=true" >> /etc/supervisor/conf.d/webmin.conf && \
-    echo "autorestart=true" >> /etc/supervisor/conf.d/webmin.conf && \
-    echo "stderr_logfile=/var/log/webmin.err.log" >> /etc/supervisor/conf.d/webmin.conf && \
-    echo "stdout_logfile=/var/log/webmin.out.log" >> /etc/supervisor/conf.d/webmin.conf
+RUN cat > /etc/supervisor/supervisord.conf <<EOF
+[supervisord]
+nodaemon=true
+
+[program:webmin]
+command=/usr/bin/perl /opt/webmin/miniserv.pl /etc/webmin/miniserv.conf
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/webmin.err.log
+stdout_logfile=/var/log/webmin.out.log
+EOF
 
 # Expose Webmin port
 EXPOSE 10000
