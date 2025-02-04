@@ -2,6 +2,12 @@ FROM pschatzmann/webmin
 
 # Install necessary dependencies
 RUN apk update && apk add --no-cache \
+    alpine-sdk \
+    apk upgrade --available && \
+    apk add --no-cache \
+    openssl \
+    ca-certificates \
+    curl
     perl-net-ssleay \
     perl-io-socket-ssl \
     wget \
@@ -16,7 +22,6 @@ RUN apk update && apk add --no-cache \
     autoconf \
     libtool \
     git \
-    alpine-sdk
 
 # Disable SSL in Webmin config
 RUN sed -i 's/ssl=1/ssl=0/' /etc/webmin/miniserv.conf
