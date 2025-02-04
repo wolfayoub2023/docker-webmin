@@ -7,7 +7,7 @@ RUN apk update && apk add --no-cache \
     apk add --no-cache \
     openssl \
     ca-certificates \
-    curl
+    curl \
     perl-net-ssleay \
     perl-io-socket-ssl \
     wget \
