@@ -8,8 +8,8 @@ RUN cd /opt && \
     wget -O - https://github.com/webmin/webmin/archive/refs/tags/1.991.tar.gz | tar -xzf - && \
     mv webmin-1.991 webmin
 
-# 3. Create an expect script to automate the setup
-RUN cat > /opt/webmin/setup.expect << 'EOF'
+# 3. Create an expect script (WITHOUT INDENTATION)
+RUN cat << 'EOF' > /opt/webmin/setup.expect
 #!/usr/bin/expect -f
 set timeout -1
 spawn /opt/webmin/setup.sh /opt/webmin
@@ -27,13 +27,13 @@ expect "Start Webmin at boot time" { send "y\r" }
 expect eof
 EOF
 
-# 4. Make the expect script executable
+# 4. Make the script executable
 RUN chmod +x /opt/webmin/setup.expect
 
 # 5. Run the expect script
 RUN /opt/webmin/setup.expect
 
-# 6. Manually set password and permissions
+# 6. Configure password and permissions
 RUN echo "admin:\$1\$salt\$qH7Y6ygQ3J4q6K8h7GZ3p/" > /etc/webmin/miniserv.users && \
     echo "admin: *" > /etc/webmin/webmin.acl && \
     chmod 600 /etc/webmin/miniserv.users && \
