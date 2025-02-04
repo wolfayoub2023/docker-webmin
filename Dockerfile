@@ -29,7 +29,7 @@ expect "Web server port" { send "10000\\r" }\n\
 expect "Login name" { send "admin\\r" }\n\
 expect "Login password" { send "admin-password\\r" }\n\
 expect "Password again" { send "admin-password\\r" }\n\
-expect "Use SSL" { send "y\\r" }\n\  # 🔹 Enabling SSL now that SSLeay is installed
+expect "Use SSL" { send "y\\r" }\n\
 expect "Start Webmin at boot time" { send "y\\r" }\n\
 expect eof\n' > /opt/webmin/setup.expect
 
