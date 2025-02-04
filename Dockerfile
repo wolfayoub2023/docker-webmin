@@ -1,27 +1,30 @@
 FROM pschatzmann/webmin
 
-# Install necessary dependencies
-RUN apk update && apk add --no-cache \
-    alpine-sdk \
-    apk upgrade --available && \
+# Replace Alpine repository with a mirror
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# Install dependencies with proper syntax
+RUN apk update && \
+    apk upgrade --no-cache && \
     apk add --no-cache \
-    openssl \
-    ca-certificates \
-    curl \
-    perl-net-ssleay \
-    perl-io-socket-ssl \
-    wget \
-    postfix \
-    spamassassin \
-    opendkim \
-    dovecot \
-    libressl \
-    libevent-dev \
-    pcre-dev \
-    automake \
-    autoconf \
-    libtool \
-    git \
+        alpine-sdk \
+        openssl \
+        ca-certificates \
+        curl \
+        perl-net-ssleay \
+        perl-io-socket-ssl \
+        wget \
+        postfix \
+        spamassassin \
+        opendkim \
+        dovecot \
+        libressl \
+        libevent-dev \
+        pcre-dev \
+        automake \
+        autoconf \
+        libtool \
+        git
 
 # Disable SSL in Webmin config
 RUN sed -i 's/ssl=1/ssl=0/' /etc/webmin/miniserv.conf
