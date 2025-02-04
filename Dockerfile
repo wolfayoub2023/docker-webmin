@@ -9,7 +9,8 @@ RUN apk update && apk add --no-cache \
     wget \
     bash \
     tar \
-    gzip
+    gzip \
+    perl-net-ssleay  # 🔹 Fix: Install Perl SSLeay for SSL support
 
 # Download and extract Webmin
 WORKDIR /opt/webmin
@@ -28,7 +29,7 @@ expect "Web server port" { send "10000\\r" }\n\
 expect "Login name" { send "admin\\r" }\n\
 expect "Login password" { send "admin-password\\r" }\n\
 expect "Password again" { send "admin-password\\r" }\n\
-expect "Use SSL" { send "n\\r" }\n\
+expect "Use SSL" { send "y\\r" }\n\  # 🔹 Enabling SSL now that SSLeay is installed
 expect "Start Webmin at boot time" { send "y\\r" }\n\
 expect eof\n' > /opt/webmin/setup.expect
 
