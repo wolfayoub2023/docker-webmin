@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /opt
 RUN wget -O webmin.tar.gz https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz && \
     tar -xzf webmin.tar.gz && \
-    cd webmin && \
+    cd $(tar -tzf webmin.tar.gz | head -1 | cut -f1 -d"/") && \
     ./setup.sh /usr/local/webmin <<EOF
 /etc/webmin
 /var/webmin
