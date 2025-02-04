@@ -1,30 +1,35 @@
 FROM alpine:latest
 
-# Install required packages
-RUN apk add --no-cache perl perl-net-ssleay wget tar expect
+# Install required dependencies
+RUN apk update && apk add --no-cache \
+    perl \
+    expect \
+    openssl \
+    wget \
+    bash \
+    tar \
+    gzip
 
-# Set up Webmin
-WORKDIR /opt
-RUN wget -O - https://github.com/webmin/webmin/archive/refs/tags/1.991.tar.gz | tar -xzf -
-RUN mv webmin-1.991 webmin
+# Download and extract Webmin
+WORKDIR /opt/webmin
+RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O webmin.tar.gz && \
+    tar -xzf webmin.tar.gz --strip-components=1 && \
+    rm webmin.tar.gz
 
-# 3. Create an expect script (WITHOUT INDENTATION)
-RUN cat << 'EOF' > /opt/webmin/setup.expect
-#!/usr/bin/expect -f
-set timeout -1
-spawn /opt/webmin/setup.sh /opt/webmin
-expect "Config file directory" { send "/etc/webmin\r" }
-expect "Log file directory" { send "/var/log/webmin\r" }
-expect "Full path to perl" { send "\r" }
-expect "Operating system" { send "84\r" }
-expect "Version" { send "ES4.0\r" }
-expect "Web server port" { send "10000\r" }
-expect "Login name" { send "admin\r" }
-expect "Login password" { send "admin-password\r" }
-expect "Password again" { send "admin-password\r" }
-expect "Use SSL" { send "n\r" }
-expect eof
-EOF
+# Create an expect script to automate the Webmin setup
+RUN printf '#!/usr/bin/expect -f\n\
+set timeout -1\n\
+spawn /opt/webmin/setup.sh /opt/webmin\n\
+expect "Config file directory" { send "/etc/webmin\\r" }\n\
+expect "Log file directory" { send "/var/log/webmin\\r" }\n\
+expect "Full path to perl" { send "\\r" }\n\
+expect "Web server port" { send "10000\\r" }\n\
+expect "Login name" { send "admin\\r" }\n\
+expect "Login password" { send "admin-password\\r" }\n\
+expect "Password again" { send "admin-password\\r" }\n\
+expect "Use SSL" { send "n\\r" }\n\
+expect "Start Webmin at boot time" { send "y\\r" }\n\
+expect eof\n' > /opt/webmin/setup.expect
 
 # Set permissions and run setup
 RUN chmod +x /opt/webmin/setup.expect
