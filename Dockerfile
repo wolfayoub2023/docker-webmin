@@ -1,38 +1,24 @@
 FROM johanp/webmin
 
 # Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
 ENV DOMAIN=reachpulse.co
-ENV HOSTNAME=mail.reachpulse.co
 
-# Update & install only necessary dependencies
-RUN apt update && apt upgrade -y && \
+# Update and install necessary packages
+RUN apt update && \
     apt install -y --no-install-recommends \
-        build-essential \
         openssl \
-        libssl-dev \
         opendkim \
-        ca-certificates \
-        curl \
-        libnet-ssleay-perl \
-        libio-socket-ssl-perl \
-        wget \
+        opendkim-tools \
         postfix \
-        spamassassin \
         dovecot-core \
         dovecot-imapd \
-        dovecot-lmtpd \
-        dovecot-mysql \
-        libevent-dev \
-        libpcre3-dev \
-        automake \
-        autoconf \
-        libtool \
-        git && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+        ca-certificates \
+        curl \
+        spamassassin && \
+    rm -rf /var/lib/apt/lists/*  # Reduce image size
 
 # Configure Postfix
-RUN postconf -e "myhostname = $HOSTNAME" && \
+RUN postconf -e "myhostname = mail.$DOMAIN" && \
     postconf -e "mydomain = $DOMAIN" && \
     postconf -e "myorigin = /etc/mailname" && \
     postconf -e "inet_interfaces = all" && \
@@ -48,17 +34,15 @@ RUN echo "mail_location = maildir:~/Maildir" >> /etc/dovecot/conf.d/10-mail.conf
     echo "ssl = no" >> /etc/dovecot/conf.d/10-ssl.conf
 
 # Configure OpenDKIM
-RUN opendkim-genkey -s mail -d $DOMAIN && \
-    mkdir -p /etc/opendkim/keys/$DOMAIN && \
-    mv mail.private /etc/opendkim/keys/$DOMAIN/mail.private && \
-    mv mail.txt /etc/opendkim/keys/$DOMAIN/mail.txt && \
+RUN mkdir -p /etc/opendkim/keys/$DOMAIN && \
+    opendkim-genkey -b 2048 -d $DOMAIN -s mail -D /etc/opendkim/keys/$DOMAIN/ && \
     chown opendkim:opendkim /etc/opendkim/keys/$DOMAIN/mail.private && \
     echo "Domain $DOMAIN" >> /etc/opendkim.conf && \
     echo "Selector mail" >> /etc/opendkim.conf && \
     echo "KeyFile /etc/opendkim/keys/$DOMAIN/mail.private" >> /etc/opendkim.conf
 
-# Add trusted referrer to Webmin config
-RUN echo "referers=reachpulse.co" >> /etc/webmin/config
+# Add trusted referrer to Webmin
+RUN echo "referers=docker-webmin.onrender.com" >> /etc/webmin/config
 
-# Expose required ports
+# Expose necessary ports
 EXPOSE 25 587 10000
