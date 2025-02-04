@@ -9,7 +9,7 @@ RUN cd /opt && \
     mv webmin-1.991 webmin
 
 # 3. Create an expect script to automate the setup
-RUN cat << 'EOF' > /opt/webmin/setup.expect
+RUN cat > /opt/webmin/setup.expect << 'EOF'
 #!/usr/bin/expect -f
 set timeout -1
 spawn /opt/webmin/setup.sh /opt/webmin
