@@ -1,45 +1,52 @@
 FROM alpine:edge
 
-# Install required dependencies
+# Install dependencies
 RUN apk update && apk add --no-cache \
     perl \
     perl-net-ssleay \
     perl-io-tty \
     perl-encode \
-    expect \
     openssl \
     wget \
     bash \
     tar \
-    gzip
+    gzip \
+    supervisor
+
+# Set working directory
+WORKDIR /opt
 
 # Download and extract Webmin
-WORKDIR /opt/webmin
 RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O webmin.tar.gz && \
-    tar -xzf webmin.tar.gz --strip-components=1 && \
+    tar -xzf webmin.tar.gz && \
+    mv webmin-1.991 webmin && \
     rm webmin.tar.gz
 
-# Create an expect script to automate the Webmin setup
-RUN printf '#!/usr/bin/expect -f\n\
-set timeout -1\n\
-spawn /opt/webmin/setup.sh /opt/webmin\n\
-expect "Config file directory" { send "/etc/webmin\\r" }\n\
-expect "Log file directory" { send "/var/log/webmin\\r" }\n\
-expect "Full path to perl" { send "\\r" }\n\
-expect "Web server port" { send "10000\\r" }\n\
-expect "Login name" { send "admin\\r" }\n\
-expect "Login password" { send "admin-password\\r" }\n\
-expect "Password again" { send "admin-password\\r" }\n\
-expect "Use SSL" { send "n\\r" }\n\
-expect "Start Webmin at boot time" { send "n\\r" }\n\
-expect eof\n' > /opt/webmin/setup.expect
+# Setup Webmin
+RUN cd webmin && \
+    ./setup.sh /usr/local/webmin <<EOF
+/etc/webmin
+/var/log/webmin
+/usr/bin/perl
+10000
+admin
+admin-password
+admin-password
+n
+n
+EOF
 
-# Set permissions and run setup
-RUN chmod +x /opt/webmin/setup.expect
-RUN /opt/webmin/setup.expect
+# Create supervisord configuration
+RUN mkdir -p /etc/supervisor/conf.d
+RUN echo "[program:webmin]" > /etc/supervisor/conf.d/webmin.conf && \
+    echo "command=/usr/local/webmin/start" >> /etc/supervisor/conf.d/webmin.conf && \
+    echo "autostart=true" >> /etc/supervisor/conf.d/webmin.conf && \
+    echo "autorestart=true" >> /etc/supervisor/conf.d/webmin.conf && \
+    echo "stderr_logfile=/var/log/webmin.err.log" >> /etc/supervisor/conf.d/webmin.conf && \
+    echo "stdout_logfile=/var/log/webmin.out.log" >> /etc/supervisor/conf.d/webmin.conf
 
-# Expose Webmin default port
+# Expose Webmin port
 EXPOSE 10000
 
-# Start Webmin on container run
-CMD ["/usr/local/webmin/start"]
+# Start Webmin using Supervisord
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/webmin.conf"]
