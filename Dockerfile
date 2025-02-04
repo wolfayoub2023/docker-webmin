@@ -23,9 +23,9 @@ RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O web
 RUN printf '#!/usr/bin/expect -f\n\
 set timeout -1\n\
 spawn "/opt/webmin/setup.sh"
-expect "Config file directory " {send "\r"}
-expect "Log file directory " {send "\r"}
-expect "Full path to perl (default /usr/bin/perl):" {send "\r"}
+expect "Config file directory" { send "/etc/webmin\\r" }\n\
+expect "Log file directory" { send "/var/log/webmin\\r" }\n\
+expect "Full path to perl" { send "\\r" }\n\
 #expect "Operating system:" {send "102\r"}
 #expect "Version:" {send "4.9\r"}
 expect "Web server port (default 10000):" {send "\r"}
