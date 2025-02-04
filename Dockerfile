@@ -1,44 +1,37 @@
-FROM alpine:edge
+FROM debian:latest
 
 # Install dependencies
-RUN apk update && apk add --no-cache \
-    perl \
-    perl-net-ssleay \
-    perl-io-tty \
-    perl-encode \
-    openssl \
+RUN apt-get update && apt-get install -y \
     wget \
-    bash \
     tar \
-    gzip \
-    supervisor
+    perl \
+    supervisor && \
+    rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Download and install Webmin
 WORKDIR /opt
-
-# Download and extract Webmin
-RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O webmin.tar.gz && \
+RUN wget -O webmin.tar.gz https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz && \
     tar -xzf webmin.tar.gz && \
-    mv webmin-1.991 webmin && \
-    rm webmin.tar.gz
-
-# Setup Webmin
-RUN cd webmin && \
+    cd webmin && \
     ./setup.sh /usr/local/webmin <<EOF
 /etc/webmin
-/var/log/webmin
+/var/webmin
 /usr/bin/perl
 10000
 admin
-admin-password
-admin-password
-n
-n
+yourpassword
+yourpassword
+y
+y
 EOF
 
-# Create supervisord configuration
+# Create Supervisor config directory
 RUN mkdir -p /etc/supervisor/conf.d
-RUN echo "[program:webmin]" > /etc/supervisor/conf.d/webmin.conf && \
+
+# Create Supervisor configuration file
+RUN echo "[supervisord]" > /etc/supervisor/supervisord.conf && \
+    echo "nodaemon=true" >> /etc/supervisor/supervisord.conf && \
+    echo "[program:webmin]" > /etc/supervisor/conf.d/webmin.conf && \
     echo "command=/usr/local/webmin/start" >> /etc/supervisor/conf.d/webmin.conf && \
     echo "autostart=true" >> /etc/supervisor/conf.d/webmin.conf && \
     echo "autorestart=true" >> /etc/supervisor/conf.d/webmin.conf && \
@@ -48,5 +41,5 @@ RUN echo "[program:webmin]" > /etc/supervisor/conf.d/webmin.conf && \
 # Expose Webmin port
 EXPOSE 10000
 
-# Start Webmin using Supervisord
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/webmin.conf"]
+# Start Supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
