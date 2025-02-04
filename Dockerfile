@@ -1,22 +1,29 @@
-FROM alpine:3.20
+# Use a base image (Alpine for a lightweight container)
+FROM alpine:latest
 
-# 1. Install required packages
-RUN apk add --no-cache perl perl-net-ssleay wget tar shadow bash expect
+# Install required dependencies
+RUN apk update && apk add --no-cache \
+    perl \
+    expect \
+    openssl \
+    wget \
+    bash \
+    tar \
+    gzip
 
-# 2. Download and extract Webmin 1.991
-RUN cd /opt && \
-    wget -O - https://github.com/webmin/webmin/archive/refs/tags/1.991.tar.gz | tar -xzf - && \
-    mv webmin-1.991 webmin
+# Download and extract Webmin
+WORKDIR /opt/webmin
+RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O webmin.tar.gz && \
+    tar -xzf webmin.tar.gz --strip-components=1 && \
+    rm webmin.tar.gz
 
-# 3. Create an expect script correctly
+# Create an expect script to automate the Webmin setup
 RUN printf '#!/usr/bin/expect -f\n\
 set timeout -1\n\
 spawn /opt/webmin/setup.sh /opt/webmin\n\
 expect "Config file directory" { send "/etc/webmin\\r" }\n\
 expect "Log file directory" { send "/var/log/webmin\\r" }\n\
 expect "Full path to perl" { send "\\r" }\n\
-expect "Operating system" { send "84\\r" }\n\
-expect "Version" { send "ES4.0\\r" }\n\
 expect "Web server port" { send "10000\\r" }\n\
 expect "Login name" { send "admin\\r" }\n\
 expect "Login password" { send "admin-password\\r" }\n\
@@ -25,27 +32,14 @@ expect "Use SSL" { send "n\\r" }\n\
 expect "Start Webmin at boot time" { send "y\\r" }\n\
 expect eof\n' > /opt/webmin/setup.expect
 
-# 4. Make the script executable
+# Make the expect script executable
 RUN chmod +x /opt/webmin/setup.expect
 
-# 5. Run the expect script
+# Run the expect script to set up Webmin
 RUN /opt/webmin/setup.expect
 
-# 6. Configure password and permissions
-RUN echo "admin:\$1\$salt\$qH7Y6ygQ3J4q6K8h7GZ3p/" > /etc/webmin/miniserv.users && \
-    echo "admin: *" > /etc/webmin/webmin.acl && \
-    chmod 600 /etc/webmin/miniserv.users && \
-    chmod 600 /etc/webmin/webmin.acl
-
-# 7. Configure for Render
-RUN echo "ssl=0" >> /etc/webmin/miniserv.conf && \
-    echo "referers=*.onrender.com" >> /etc/webmin/config && \
-    echo "port=10000" >> /etc/webmin/miniserv.conf
-
-# 8. Set permissions
-RUN chown -R root:root /etc/webmin && \
-    chown -R root:root /var/log/webmin
-
+# Expose Webmin port
 EXPOSE 10000
 
-CMD ["/opt/webmin/miniserv.pl", "/etc/webmin/miniserv.conf"]
+# Start Webmin on container start
+CMD ["/etc/webmin/start"]
