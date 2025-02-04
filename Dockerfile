@@ -1,27 +1,36 @@
 FROM alpine:latest
 
-# Install dependencies
+# Install required packages
 RUN apk add --no-cache perl perl-net-ssleay wget tar expect
 
-# Set environment variables
-ENV WEBMIN_VERSION=1.991
-ENV WEBMIN_DIR=/opt/webmin
+# Set up Webmin
+WORKDIR /opt
+RUN wget -O - https://github.com/webmin/webmin/archive/refs/tags/1.991.tar.gz | tar -xzf -
+RUN mv webmin-1.991 webmin
 
-# Download and install Webmin
-RUN wget -O - https://github.com/webmin/webmin/archive/refs/tags/$WEBMIN_VERSION.tar.gz | tar -xz -C /opt && \
-    mv /opt/webmin-$WEBMIN_VERSION $WEBMIN_DIR
+# Generate Expect script for automated setup
+RUN printf '#!/usr/bin/expect -f\n\
+set timeout -1\n\
+spawn /opt/webmin/setup.sh /usr/local/webmin\n\
+expect "Config file directory" { send "\\r" }\n\
+expect "Log file directory" { send "/var/log/webmin\\r" }\n\
+expect "Full path to perl" { send "\\r" }\n\
+expect "Operating system" { send "84\\r" }\n\
+expect "Version" { send "ES4.0\\r" }\n\
+expect "Web server port" { send "10000\\r" }\n\
+expect "Login name" { send "admin\\r" }\n\
+expect "Login password" { send "admin-password\\r" }\n\
+expect "Password again" { send "admin-password\\r" }\n\
+expect "Use SSL" { send "n\\r" }\n\
+expect "Start Webmin at boot time" { send "y\\r" }\n\
+expect eof' > /opt/webmin/setup.expect
 
-# Create setup script
-RUN printf '#!/usr/bin/expect -f\nset timeout -1\nspawn /opt/webmin/setup.sh /usr/local/webmin\nexpect "Config file directory" { send "\r" }\nexpect "Log file directory" { send "/var/log/webmin\r" }\nexpect "Full path to perl" { send "\r" }\nexpect "Operating system" { send "84\r" }\nexpect "Version" { send "ES4.0\r" }\nexpect "Web server port" { send "10000\r" }\nexpect "Login name" { send "admin\r" }\nexpect "Login password" { send "admin-password\r" }\nexpect "Password again" { send "admin-password\r" }\nexpect "Use SSL" { send "n\r" }\nexpect "Start Webmin at boot time" { send "y\r" }\nexpect eof\n' > /opt/webmin/setup.expect
-
-# Set execute permission for the setup script
+# Set permissions and run setup
 RUN chmod +x /opt/webmin/setup.expect
-
-# Run Webmin setup
 RUN /opt/webmin/setup.expect
 
-# Expose Webmin port
+# Expose Webmin default port
 EXPOSE 10000
 
-# Start Webmin service
-CMD ["/usr/local/webmin/miniserv.pl", "/etc/webmin/miniserv.conf"]
+# Start Webmin on container run
+CMD ["/usr/local/webmin/start"]
