@@ -1,26 +1,28 @@
-FROM alpine:edge
+# Use a minimal base image
+FROM debian:latest
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies
-RUN apk update && apk add --no-cache \
-    perl \
-    perl-net-ssleay \
-    perl-io-tty \
-    perl-encode \
-    openssl \
+RUN apt-get update && apt-get install -y \
     wget \
-    bash \
-    tar \
-    gzip \
-    supervisor \
-    expect
+    perl \
+    expect \
+    libnet-ssleay-perl \
+    libauthen-pam-perl \
+    libio-pty-perl \
+    libdigest-md5-perl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Download and extract Webmin
-WORKDIR /opt/webmin
-RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O webmin.tar.gz && \
-    tar -xzf webmin.tar.gz --strip-components=1 && \
+WORKDIR /opt
+RUN wget http://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O webmin.tar.gz && \
+    tar -xzf webmin.tar.gz && \
+    mv webmin-* webmin && \
     rm webmin.tar.gz
 
-# Create an expect script to automate the Webmin setup
+# Setup Webmin using Expect to automate input
 RUN printf '#!/usr/bin/expect -f\n\
 set timeout -1\n\
 spawn /opt/webmin/setup.sh /opt/webmin\n\
@@ -35,27 +37,15 @@ expect "Use SSL" { send "n\\r" }\n\
 expect "Start Webmin at boot time" { send "n\\r" }\n\
 expect eof\n' > /opt/webmin/setup.expect && chmod +x /opt/webmin/setup.expect
 
-# Run the expect script
+# Run the setup script
 RUN /opt/webmin/setup.expect
 
-# Create Supervisor config directory
-RUN mkdir -p /etc/supervisor/conf.d
+# Fix networking issues: Ensure Webmin listens on all interfaces
+RUN sed -i 's/^listen=127.0.0.1/listen=0.0.0.0/' /etc/webmin/miniserv.conf && \
+    echo "allow=0.0.0.0" >> /etc/webmin/miniserv.conf
 
-# Create Supervisor configuration file
-RUN cat > /etc/supervisor/supervisord.conf <<EOF
-[supervisord]
-nodaemon=true
-
-[program:webmin]
-command=/usr/bin/perl /opt/webmin/miniserv.pl /etc/webmin/miniserv.conf
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/webmin.err.log
-stdout_logfile=/var/log/webmin.out.log
-EOF
-
-# Expose Webmin port
+# Expose Webmin's default port
 EXPOSE 10000
 
-# Start Supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+# Start Webmin in the foreground to prevent container exit
+CMD ["/opt/webmin/miniserv.pl", "/etc/webmin/miniserv.conf"]
