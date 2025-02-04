@@ -1,17 +1,18 @@
 FROM pschatzmann/webmin
 
-# Update repositories to Alpine v3.21
-RUN echo "http://mirrors.aliyun.com/alpine/v3.21/main" > /etc/apk/repositories && \
-    echo "http://mirrors.aliyun.com/alpine/v3.21/community" >> /etc/apk/repositories
+# Update repositories to latest-stable and fix keys
+RUN echo "http://mirrors.ustc.edu.cn/alpine/latest-stable/main" > /etc/apk/repositories && \
+    echo "http://mirrors.ustc.edu.cn/alpine/latest-stable/community" >> /etc/apk/repositories && \
+    apk add -X http://dl-cdn.alpinelinux.org/alpine/latest-stable/main -U alpine-keys --allow-untrusted
 
-# Install dependencies
-RUN apk update && \
-    apk upgrade --no-cache && \
-    apk add --no-cache \
+# Install dependencies with --allow-untrusted
+RUN apk update --allow-untrusted && \
+    apk upgrade --no-cache --allow-untrusted && \
+    apk add --no-cache --allow-untrusted \
         alpine-sdk \
         openssl \
         libressl \
-        opendkim \ 
+        opendkim \
         ca-certificates \
         curl \
         perl-net-ssleay \
