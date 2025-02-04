@@ -1,4 +1,4 @@
-FROM pschatzmann/webmin
+FROM johanp/webmin
 
 RUN apt update && \
     apt upgrade -y && \
