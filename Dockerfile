@@ -1,4 +1,4 @@
-FROM debian:latest
+FROM alpine:edge
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -21,8 +21,8 @@ RUN wget -O webmin.tar.gz https://prdownloads.sourceforge.net/webadmin/webmin-1.
 admin
 yourpassword
 yourpassword
-y
-y
+n
+n
 EOF
 
 # Create Supervisor config directory
