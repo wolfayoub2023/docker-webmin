@@ -22,18 +22,16 @@ RUN wget https://prdownloads.sourceforge.net/webadmin/webmin-1.991.tar.gz -O web
 # Create an expect script to automate the Webmin setup
 RUN printf '#!/usr/bin/expect -f\n\
 set timeout -1\n\
-spawn "/opt/webmin/setup.sh"
+spawn /opt/webmin/setup.sh /opt/webmin\n\
 expect "Config file directory" { send "/etc/webmin\\r" }\n\
 expect "Log file directory" { send "/var/log/webmin\\r" }\n\
 expect "Full path to perl" { send "\\r" }\n\
-#expect "Operating system:" {send "102\r"}
-#expect "Version:" {send "4.9\r"}
-expect "Web server port (default 10000):" {send "\r"}
-expect "Login name (default admin):" {send "root\r"}
-expect "Login password:" {send "root\r"}
-expect "Password again:" {send "root\r"}
-expect "Use SSL (y/n):" {send  "n\r"}
-expect "Start Webmin at boot time (y/n):" {send  "n\r"}
+expect "Web server port" { send "10000\\r" }\n\
+expect "Login name" { send "admin\\r" }\n\
+expect "Login password" { send "admin-password\\r" }\n\
+expect "Password again" { send "admin-password\\r" }\n\
+expect "Use SSL" { send "n\\r" }\n\
+expect "Start Webmin at boot time" { send "y\\r" }\n\
 expect eof\n' > /opt/webmin/setup.expect
 
 # Set permissions and run setup
