@@ -1,12 +1,17 @@
 FROM alpine:edge
 
 # Install dependencies
-RUN apt-get update && apt-get install -y \
-    wget \
-    tar \
+RUN apk update && apk add --no-cache \
     perl \
-    supervisor && \
-    rm -rf /var/lib/apt/lists/*
+    perl-net-ssleay \
+    perl-io-tty \
+    perl-encode \
+    openssl \
+    wget \
+    bash \
+    tar \
+    gzip \
+    supervisor
 
 # Download and install Webmin
 WORKDIR /opt
