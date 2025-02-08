@@ -1,26 +1,20 @@
-# Use the official Ruby image on Alpine Linux
-FROM ruby:3.1-alpine
+# Use an official Ruby image – you can adjust the Ruby version if needed.
+FROM ruby:3.2-slim
 
-# Install build dependencies (needed for native extensions)
-RUN apk add --no-cache build-base
+# Install system packages (if you need any additional ones, add them here)
+RUN apt-get update -qq && apt-get install -y build-essential libpq-dev
+
+# Install the Truemail gem (this installs the Truemail server)
+RUN gem install truemail --no-document
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the application source code into the container.
-# (If you use Bundler and have Gemfile and Gemfile.lock, uncomment the two COPY lines below.)
-# COPY Gemfile Gemfile.lock ./
-# RUN bundle install --deployment --without development test
+# Copy the Rack configuration file (see below)
+COPY config.ru /app/config.ru
 
-# If you do not have a Gemfile, simply copy all files.
-COPY . .
-
-# Expose the port your app listens on (adjust if needed)
+# Expose the port that Truemail’s Rack server listens on
 EXPOSE 9292
 
-# Set the environment variable for production
-ENV RACK_ENV=production
-
-# Start the Rack server (this assumes your repository includes a config.ru).
-# Ensure the command does not exit immediately.
-CMD ["bundle", "exec", "rackup", "--host", "0.0.0.0", "--port", "9292"]
+# Run the Truemail server using rackup
+CMD ["rackup", "-p", "9292", "--env", "production"]
