@@ -1,13 +1,21 @@
-FROM truemail/truemail-rack
+# Use official Ruby image
+FROM ruby:3.2
 
 # Set working directory
 WORKDIR /app
 
 # Install dependencies
-RUN bundle install
+RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs
 
-# Expose the correct port
-EXPOSE 9292
+# Copy Gemfile and install gems
+COPY Gemfile Gemfile.lock ./
+RUN gem install bundler && bundle install
 
-# Start the server
+# Copy the application code
+COPY . .
+
+# Expose port (default for Puma)
+EXPOSE 3000
+
+# Run the application
 CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
