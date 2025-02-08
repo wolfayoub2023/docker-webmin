@@ -1,4 +1,4 @@
 # config.ru
 require 'truemail'
-# This assumes Truemail provides a server class (commonly Truemail::Server)
+# If Truemail provides a server class, for example:
 run Truemail::Server
