@@ -1,26 +1,23 @@
-# Use an official Ruby image based on Alpine Linux
+# Use the official Ruby image based on Alpine Linux
 FROM ruby:3.1-alpine
 
-# Install build dependencies (e.g. for compiling native extensions)
+# Install build tools (in case native extensions are needed)
 RUN apk add --no-cache build-base
 
-# Set working directory inside the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy Gemfile only (since Gemfile.lock is missing)
-COPY Gemfile ./
-
-# Install gem dependencies (omit development and test groups)
-RUN bundle install --deployment --without development test
-
-# Copy the rest of your application code
+# Copy the entire repository into the container
 COPY . .
 
-# Expose the port your app will listen on (9292 is the default for Rack)
+# (Optional) If your project uses Bundler and you have a Gemfile, you could install dependencies:
+# RUN bundle install --deployment --without development test
+
+# Expose the port your app listens on (adjust if necessary)
 EXPOSE 9292
 
-# Set the environment to production (adjust if needed)
+# Set environment variable (adjust if needed)
 ENV RACK_ENV=production
 
-# Start the Rack server, binding to all interfaces
-CMD ["bundle", "exec", "rackup", "--host", "0.0.0.0", "--port", "9292"]
+# Start the Rack server; if your app uses a config.ru file, this will work
+CMD ["rackup", "--host", "0.0.0.0", "--port", "9292"]
