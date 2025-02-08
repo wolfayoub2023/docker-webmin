@@ -1,48 +1,26 @@
-FROM johanp/webmin
+# Use an official Ruby image as the base
+FROM ruby:3.1-alpine
 
-# Set environment variables
-ENV DOMAIN=reachpulse.co
+# Install build dependencies
+RUN apk add --no-cache build-base
 
-# Update and install necessary packages
-RUN apt update && \
-    apt install -y --no-install-recommends \
-        openssl \
-        opendkim \
-        opendkim-tools \
-        postfix \
-        dovecot-core \
-        dovecot-imapd \
-        ca-certificates \
-        curl \
-        spamassassin && \
-    rm -rf /var/lib/apt/lists/*  # Reduce image size
+# Set the working directory
+WORKDIR /app
 
-# Configure Postfix
-RUN postconf -e "myhostname = mail.$DOMAIN" && \
-    postconf -e "mydomain = $DOMAIN" && \
-    postconf -e "myorigin = /etc/mailname" && \
-    postconf -e "inet_interfaces = all" && \
-    postconf -e "inet_protocols = all" && \
-    postconf -e "mydestination = localhost, localhost.localdomain, $DOMAIN" && \
-    postconf -e "mynetworks = 127.0.0.0/8" && \
-    postconf -e "relay_domains =" && \
-    postconf -e "home_mailbox = Maildir/"
+# Copy Gemfile and Gemfile.lock first for dependency caching
+COPY Gemfile Gemfile.lock ./
 
-# Configure Dovecot
-RUN echo "mail_location = maildir:~/Maildir" >> /etc/dovecot/conf.d/10-mail.conf && \
-    echo "protocols = imap lmtp" >> /etc/dovecot/dovecot.conf && \
-    echo "ssl = no" >> /etc/dovecot/conf.d/10-ssl.conf
+# Install gem dependencies (omit development and test groups)
+RUN bundle install --deployment --without development test
 
-# Configure OpenDKIM
-RUN mkdir -p /etc/opendkim/keys/$DOMAIN && \
-    opendkim-genkey -b 2048 -d $DOMAIN -s mail -D /etc/opendkim/keys/$DOMAIN/ && \
-    chown opendkim:opendkim /etc/opendkim/keys/$DOMAIN/mail.private && \
-    echo "Domain $DOMAIN" >> /etc/opendkim.conf && \
-    echo "Selector mail" >> /etc/opendkim.conf && \
-    echo "KeyFile /etc/opendkim/keys/$DOMAIN/mail.private" >> /etc/opendkim.conf
+# Copy the rest of the application code
+COPY . .
 
-# Add trusted referrer to Webmin
-RUN echo "referers=docker-webmin.onrender.com" >> /etc/webmin/config
+# Expose port 9292 so Render can route HTTP traffic
+EXPOSE 9292
 
-# Expose necessary ports
-EXPOSE 25 587 10000
+# Set environment variable for production (adjust if needed)
+ENV RACK_ENV=production
+
+# Start the Rack server (ensure it binds to 0.0.0.0 so external requests are accepted)
+CMD ["bundle", "exec", "rackup", "--host", "0.0.0.0", "--port", "9292"]
